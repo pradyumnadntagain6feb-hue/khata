@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "110912358692",
+    "project_id": "khata-book-prady",
+    "storage_bucket": "khata-book-prady.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:110912358692:android:c23fe1cbe59aab2ddd8bb1",
+        "android_client_info": {
+          "package_name": "com.example.runnerp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXL3kCufcaMTaI0ptuIHy30ZOxayNYivQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
