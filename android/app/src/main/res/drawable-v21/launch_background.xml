@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Khata Custom Dark Navy Splash Screen (v21+) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Dark Navy Background -->
+    <item android:drawable="@color/splash_navy" />
+
+    <!-- Centered Khata Logo Badge -->
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/khata_splash_logo" />
+    </item>
+</layer-list>

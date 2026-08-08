@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Dark Navy Rounded Canvas -->
+    <path
+        android:fillColor="#1A2634"
+        android:pathData="M18,10 L82,10 A16,16 0 0,1 98,26 L98,74 A16,16 0 0,1 82,90 L18,90 A16,16 0 0,1 2,74 L2,26 A16,16 0 0,1 18,10 Z" />
+
+    <!-- White Khata Notebook Pages -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,26 L66,26 A6,6 0 0,1 72,32 L72,68 A6,6 0 0,1 66,74 L28,74 A6,6 0 0,1 22,68 L22,32 A6,6 0 0,1 28,26 Z" />
+
+    <!-- Gold Binding Line on Notebook -->
+    <path
+        android:fillColor="#E59836"
+        android:pathData="M28,26 L32,26 L32,74 L28,74 Z" />
+
+    <!-- Gold Line Detail on Cover -->
+    <path
+        android:strokeColor="#E59836"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M40,38 L58,38" />
+
+    <!-- Green Stamp Circle Badge (Attendance Present) -->
+    <path
+        android:fillColor="#25D366"
+        android:pathData="M64,64 m-16,0 a16,16 0 1,0 32,0 a16,16 0 1,0 -32,0" />
+
+    <!-- White Checkmark in Badge -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M56,64 L61,69 L72,58" />
+</vector>
