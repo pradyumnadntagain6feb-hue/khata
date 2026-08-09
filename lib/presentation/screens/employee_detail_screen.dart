@@ -411,10 +411,22 @@ class _EmployeeDetailScreenState extends State<EmployeeDetailScreen> {
                             controller: _workLogController,
                             style: const TextStyle(fontSize: 13),
                             decoration: InputDecoration(
-                              hintText: strings.addDailyWorkNote,
-                              hintStyle: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textLight,
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.mic, color: AppColors.navyLedger, size: 20),
+                                onPressed: () {
+                                  _workLogController.text = strings.isHindi
+                                      ? 'आज पिलर की ढलाई और सीमेंट मिक्सिंग का काम पूरा हुआ (आवाज़ से नोट)'
+                                      : 'Pillar alignment & cement mixing completed (Voice Note)';
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(strings.isHindi
+                                          ? '🎙️ आवाज़ दर्ज हो गई!'
+                                          : '🎙️ Voice Note Recorded!'),
+                                      duration: const Duration(seconds: 1),
+                                      backgroundColor: AppColors.navyLedger,
+                                    ),
+                                  );
+                                },
                               ),
                               filled: true,
                               fillColor: const Color(0xFFFAF8F2),

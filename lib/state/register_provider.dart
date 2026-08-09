@@ -1,25 +1,69 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/i18n/app_strings.dart';
 import '../core/models/attendance_status.dart';
 import '../core/models/employee_model.dart';
 import '../core/models/work_log_model.dart';
+import '../core/services/firestore_service.dart';
 
 class RegisterProvider extends ChangeNotifier {
-  final int todayDay = 18; // Today is August 18th
+  final int todayDay = 18;
   final String monthYearLabel = 'AUGUST 2026';
+
+  final FirestoreService _firestoreService = FirestoreService();
+  StreamSubscription<List<Employee>>? _firestoreSubscription;
 
   AppLanguage _language = AppLanguage.english;
   bool _isFirstTimeUser = true;
 
-  List<Employee> _employees = []; // Clean empty register by default!
+  String _ownerName = '';
+  String _businessName = 'Muster Khata';
+  bool _isProUser = false;
+
+  String get ownerName => _ownerName;
+  String get businessName => _businessName;
+  bool get isProUser => _isProUser;
+
+  void setOwnerProfile({required String name, required String businessName}) {
+    _ownerName = name;
+    _businessName = businessName;
+    notifyListeners();
+  }
+
+  void upgradeToPro() {
+    _isProUser = true;
+    notifyListeners();
+  }
+
+  List<Employee> _employees = [];
   String _searchQuery = '';
   String? _selectedEmployeeId;
 
   final List<Map<String, String>> _submittedFeedbackList = [];
 
   RegisterProvider() {
-    // Starts with a clean empty list for real user entry
-    _employees = [];
+    _initCloudSync();
+  }
+
+  /// Connect Real-Time Firestore Cloud Database Stream
+  void _initCloudSync() {
+    try {
+      _firestoreSubscription =
+          _firestoreService.getEmployeesStream().listen((cloudEmployees) {
+        _employees = cloudEmployees;
+        notifyListeners();
+      }, onError: (error) {
+        debugPrint('Firestore stream sync notice: $error');
+      });
+    } catch (e) {
+      debugPrint('Firestore sync initialization notice: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _firestoreSubscription?.cancel();
+    super.dispose();
   }
 
   // Language & Localization getters
@@ -35,18 +79,6 @@ class RegisterProvider extends ChangeNotifier {
   void completeOnboarding(AppLanguage chosenLang) {
     _language = chosenLang;
     _isFirstTimeUser = false;
-    notifyListeners();
-  }
-
-  void clearAllSampleData() {
-    _employees.clear();
-    _selectedEmployeeId = null;
-    notifyListeners();
-  }
-
-  /// Option to load demo sample workers if needed
-  void loadSampleDemoData() {
-    _initSampleData();
     notifyListeners();
   }
 
@@ -89,6 +121,18 @@ class RegisterProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 1-Tap Quick Action: Mark all workers Present today
+  void markAllTodayPresent() {
+    for (int i = 0; i < _employees.length; i++) {
+      final emp = _employees[i];
+      final updatedAttendance = Map<int, AttendanceStatus>.from(emp.augustAttendance);
+      updatedAttendance[todayDay] = AttendanceStatus.present;
+      _employees[i] = emp.copyWith(augustAttendance: updatedAttendance);
+      _firestoreService.updateAttendance(emp.id, updatedAttendance);
+    }
+    notifyListeners();
+  }
+
   /// Mark Today's Attendance (P, H, or A)
   void markTodayAttendance(String employeeId, AttendanceStatus status) {
     final index = _employees.indexWhere((e) => e.id == employeeId);
@@ -99,6 +143,9 @@ class RegisterProvider extends ChangeNotifier {
 
       _employees[index] = emp.copyWith(augustAttendance: updatedAttendance);
       notifyListeners();
+
+      // Cloud Sync
+      _firestoreService.updateAttendance(employeeId, updatedAttendance);
     }
   }
 
@@ -112,6 +159,9 @@ class RegisterProvider extends ChangeNotifier {
 
       _employees[index] = emp.copyWith(augustAttendance: updatedAttendance);
       notifyListeners();
+
+      // Cloud Sync
+      _firestoreService.updateAttendance(employeeId, updatedAttendance);
     }
   }
 
@@ -152,6 +202,9 @@ class RegisterProvider extends ChangeNotifier {
       final updatedLogs = [newLog, ...emp.workLogs];
       _employees[index] = emp.copyWith(workLogs: updatedLogs);
       notifyListeners();
+
+      // Cloud Sync
+      _firestoreService.addWorkLog(employeeId, newLog);
     }
   }
 
@@ -166,6 +219,9 @@ class RegisterProvider extends ChangeNotifier {
         emp.paid += amount;
       }
       notifyListeners();
+
+      // Cloud Sync
+      _firestoreService.updatePayments(employeeId, emp.paid, emp.advance);
     }
   }
 
@@ -178,10 +234,7 @@ class RegisterProvider extends ChangeNotifier {
   }) {
     final newId = 'emp_${DateTime.now().millisecondsSinceEpoch}';
     final defaultAttendance = <int, AttendanceStatus>{};
-    // Default today present
-    for (int i = 1; i <= 17; i++) {
-      defaultAttendance[i] = AttendanceStatus.present;
-    }
+    // Only mark today's attendance on joining day; previous days stay unMarked
     defaultAttendance[todayDay] = AttendanceStatus.present;
 
     final newEmployee = Employee(
@@ -202,6 +255,9 @@ class RegisterProvider extends ChangeNotifier {
 
     _employees.add(newEmployee);
     notifyListeners();
+
+    // Cloud Sync to Firestore Database
+    _firestoreService.addEmployee(newEmployee);
   }
 
   // Quick stats calculations for overall register ribbon
@@ -216,101 +272,6 @@ class RegisterProvider extends ChangeNotifier {
 
   double get totalRegisterEarned =>
       _employees.fold(0.0, (sum, emp) => sum + emp.earnedAmount);
-
-  void _initSampleData() {
-    final rameshAttendance = <int, AttendanceStatus>{
-      1: AttendanceStatus.present,
-      2: AttendanceStatus.present,
-      3: AttendanceStatus.present,
-      4: AttendanceStatus.halfDay,
-      5: AttendanceStatus.present,
-      6: AttendanceStatus.absent,
-      7: AttendanceStatus.present,
-      8: AttendanceStatus.present,
-      9: AttendanceStatus.present,
-      10: AttendanceStatus.present,
-      11: AttendanceStatus.halfDay,
-      12: AttendanceStatus.present,
-      13: AttendanceStatus.present,
-      14: AttendanceStatus.absent,
-      15: AttendanceStatus.present,
-      16: AttendanceStatus.present,
-      17: AttendanceStatus.present,
-      18: AttendanceStatus.present,
-    };
-
-    final sureshAttendance = <int, AttendanceStatus>{};
-    for (int i = 1; i <= 18; i++) {
-      if (i == 5) {
-        sureshAttendance[i] = AttendanceStatus.halfDay;
-      } else if (i == 9 || i == 15) {
-        sureshAttendance[i] = AttendanceStatus.absent;
-      } else {
-        sureshAttendance[i] = AttendanceStatus.present;
-      }
-    }
-
-    final vikramAttendance = <int, AttendanceStatus>{};
-    for (int i = 1; i <= 18; i++) {
-      if (i <= 10) {
-        vikramAttendance[i] = AttendanceStatus.present;
-      } else {
-        vikramAttendance[i] = AttendanceStatus.absent;
-      }
-    }
-    vikramAttendance[18] = AttendanceStatus.present;
-
-    _employees = [
-      Employee(
-        id: 'emp_1',
-        name: 'Ramesh Yadav',
-        role: 'Site Mason',
-        dailyRate: 650.0,
-        paid: 5200.0,
-        advance: 500.0,
-        augustAttendance: rameshAttendance,
-        workLogs: [
-          WorkLog(
-            id: 'wl_1',
-            date: DateTime(2026, 8, 18),
-            note: 'Pillar 4 shuttering & alignment completed.',
-          ),
-        ],
-      ),
-      Employee(
-        id: 'emp_2',
-        name: 'Suresh Kumar',
-        role: 'Helper',
-        dailyRate: 450.0,
-        paid: 2925.0,
-        advance: 0.0,
-        augustAttendance: sureshAttendance,
-        workLogs: [
-          WorkLog(
-            id: 'wl_4',
-            date: DateTime(2026, 8, 18),
-            note: 'Cement bag shifting & mortar mixing helper.',
-          ),
-        ],
-      ),
-      Employee(
-        id: 'emp_3',
-        name: 'Vikram Singh',
-        role: 'Electrician',
-        dailyRate: 800.0,
-        paid: 5000.0,
-        advance: 0.0,
-        augustAttendance: vikramAttendance,
-        workLogs: [
-          WorkLog(
-            id: 'wl_5',
-            date: DateTime(2026, 8, 18),
-            note: 'Main distribution board wiring & earthing test.',
-          ),
-        ],
-      ),
-    ];
-  }
 }
 
 class RegisterProviderScope extends InheritedNotifier<RegisterProvider> {

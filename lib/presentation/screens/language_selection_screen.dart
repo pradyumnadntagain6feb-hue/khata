@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/i18n/app_strings.dart';
 import '../../state/register_provider.dart';
-import 'todays_register_screen.dart';
+import 'google_auth_screen.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
   const LanguageSelectionScreen({super.key});
@@ -21,7 +21,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (ctx) => const TodaysRegisterScreen(),
+        builder: (ctx) => const GoogleAuthScreen(),
       ),
     );
   }

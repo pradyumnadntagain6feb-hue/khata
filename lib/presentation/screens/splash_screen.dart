@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/auth_service.dart';
 import '../../state/register_provider.dart';
+import 'google_auth_screen.dart';
 import 'language_selection_screen.dart';
 import 'todays_register_screen.dart';
 
@@ -38,13 +40,20 @@ class _KhataSplashScreenState extends State<KhataSplashScreen>
 
     _controller.forward();
 
-    // Navigate to Onboarding or Register Screen after 1.5 seconds
+    // Smart Navigation
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (!mounted) return;
       final provider = RegisterProviderScope.of(context);
-      final nextScreen = provider.isFirstTimeUser
-          ? const LanguageSelectionScreen()
-          : const TodaysRegisterScreen();
+      final authService = AuthService();
+
+      Widget nextScreen;
+      if (authService.isLoggedIn) {
+        nextScreen = const TodaysRegisterScreen();
+      } else if (provider.isFirstTimeUser) {
+        nextScreen = const LanguageSelectionScreen();
+      } else {
+        nextScreen = const GoogleAuthScreen();
+      }
 
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(

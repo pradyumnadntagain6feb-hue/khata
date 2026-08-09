@@ -12,7 +12,20 @@
           "package_name": "com.example.runnerp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "110912358692-r7gv1oa2k2m4ntk40gqrcals0bmo08c4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.runnerp",
+            "certificate_hash": "180712029a31192c11a73412da09d980208d1221"
+          }
+        },
+        {
+          "client_id": "110912358692-gisrno94nhe6823ne4ovabig96m2mbru.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDXL3kCufcaMTaI0ptuIHy30ZOxayNYivQ"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "110912358692-gisrno94nhe6823ne4ovabig96m2mbru.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

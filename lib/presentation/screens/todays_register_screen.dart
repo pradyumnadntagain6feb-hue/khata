@@ -6,6 +6,7 @@ import '../../core/models/employee_model.dart';
 import '../../state/register_provider.dart';
 import '../widgets/add_employee_modal.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/dummy_ad_banner.dart';
 import '../widgets/ink_stamp.dart';
 import 'employee_detail_screen.dart';
 
@@ -57,15 +58,22 @@ class _TodaysRegisterScreenState extends State<TodaysRegisterScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          strings.musterAugust,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                            color: Color(0xFF7B8898),
+                        Expanded(
+                          child: Text(
+                            provider.ownerName.isNotEmpty
+                                ? '${provider.ownerName.toUpperCase()} · ${strings.musterAugust}'
+                                : strings.musterAugust,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                              color: Color(0xFF7B8898),
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Builder(
                           builder: (ctx) => GestureDetector(
                             onTap: () => Scaffold.of(ctx).openDrawer(),
@@ -91,13 +99,15 @@ class _TodaysRegisterScreenState extends State<TodaysRegisterScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          strings.todaysRegister,
-                          style: const TextStyle(
-                            fontFamily: 'serif',
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textDark,
+                        Expanded(
+                          child: Text(
+                            strings.todaysRegister,
+                            style: const TextStyle(
+                              fontFamily: 'serif',
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textDark,
+                            ),
                           ),
                         ),
                         IconButton(
@@ -172,7 +182,70 @@ class _TodaysRegisterScreenState extends State<TodaysRegisterScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+                    // Demo AdMob Sponsor Banner (Hidden if Pro User)
+                    const DummyAdBannerWidget(),
+                    const SizedBox(height: 12),
+                    if (employees.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            strings.isHindi ? 'मज़दूरों की सूची' : 'Worker List',
+                            style: const TextStyle(
+                              fontFamily: 'serif',
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textDark,
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              provider.markAllTodayPresent();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(strings.isHindi
+                                      ? 'सभी मज़दूरों की आज की P (Present) लग गई! ⚡'
+                                      : 'All workers marked Present today! ⚡'),
+                                  backgroundColor: AppColors.navyLedger,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.stampPBorder.withAlpha(25),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: AppColors.stampPBorder),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.bolt,
+                                      size: 14,
+                                      color: AppColors.stampPBorder),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    strings.isHindi
+                                        ? 'सबको P लगाएं'
+                                        : 'Mark All Present',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.stampPBorder,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                   ],
                 ),
               ),

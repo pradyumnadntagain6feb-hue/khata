@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/auth_service.dart';
+import '../../core/services/firestore_service.dart';
 import '../../state/register_provider.dart';
 
 class FeedbackModal extends StatefulWidget {
@@ -19,11 +21,24 @@ class _FeedbackModalState extends State<FeedbackModal> {
     super.dispose();
   }
 
-  void _submit() {
+  void _submit() async {
     final message = _textController.text.trim();
     if (message.isNotEmpty) {
       final provider = RegisterProviderScope.of(context);
       provider.submitFeedback(_selectedCategory, message);
+
+      final authService = AuthService();
+      final user = authService.currentUser;
+      final firestoreService = FirestoreService();
+
+      await firestoreService.submitFeedback(
+        category: _selectedCategory,
+        message: message,
+        userName: provider.ownerName.isNotEmpty ? provider.ownerName : user?.displayName,
+        userEmail: user?.email,
+      );
+
+      if (!mounted) return;
 
       final strings = provider.strings;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -34,9 +49,7 @@ class _FeedbackModalState extends State<FeedbackModal> {
         ),
       );
 
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+      Navigator.of(context).pop();
     }
   }
 

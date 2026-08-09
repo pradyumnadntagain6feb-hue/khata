@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/i18n/app_strings.dart';
+import '../../core/services/auth_service.dart';
+import '../../presentation/screens/google_auth_screen.dart';
 import '../../state/register_provider.dart';
 import 'feedback_modal.dart';
+import 'subscription_modal.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -17,55 +20,14 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  void _confirmClearSampleData(BuildContext context, RegisterProvider provider) {
-    final strings = provider.strings;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.bgParchment,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          strings.clearSampleData,
-          style: const TextStyle(
-            fontFamily: 'serif',
-            fontWeight: FontWeight.bold,
-            color: AppColors.textDark,
-          ),
-        ),
-        content: Text(
-          strings.isHindi
-              ? 'क्या आप सभी रजिस्टर डाटा साफ़ करना चाहते हैं?'
-              : 'Do you want to clear all register data?',
-          style: const TextStyle(fontSize: 13, color: AppColors.textDark),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(strings.cancel, style: const TextStyle(color: AppColors.textMuted)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.stampABorder,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () {
-              provider.clearAllSampleData();
-              Navigator.of(ctx).pop(); // Close dialog
-              Navigator.of(context).pop(); // Close drawer
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(strings.sampleDataCleared),
-                  backgroundColor: AppColors.navyLedger,
-                ),
-              );
-            },
-            child: Text(
-              strings.isHindi ? 'हाँ, साफ़ करें' : 'Yes, Clear',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+  void _handleSignOut(BuildContext context) async {
+    final authService = AuthService();
+    await authService.signOut();
+    if (!context.mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (ctx) => const GoogleAuthScreen()),
+      (route) => false,
     );
   }
 
@@ -74,6 +36,8 @@ class AppDrawer extends StatelessWidget {
     final provider = RegisterProviderScope.of(context);
     final strings = provider.strings;
     final isHindi = provider.language == AppLanguage.hindi;
+    final authService = AuthService();
+    final user = authService.currentUser;
 
     return Drawer(
       backgroundColor: AppColors.bgParchment,
@@ -86,25 +50,32 @@ class AppDrawer extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.goldAccent,
-                    borderRadius: BorderRadius.circular(16),
+                if (user?.photoURL != null) ...[
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundImage: NetworkImage(user!.photoURL!),
                   ),
-                  child: const Center(
-                    child: Text(
-                      'ख',
-                      style: TextStyle(
-                        fontFamily: 'serif',
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.navyLedger,
+                ] else ...[
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: AppColors.goldAccent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'ख',
+                        style: TextStyle(
+                          fontFamily: 'serif',
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.navyLedger,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -112,19 +83,27 @@ class AppDrawer extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        strings.drawerTitle,
+                        provider.ownerName.isNotEmpty
+                            ? provider.ownerName
+                            : (user?.displayName ?? strings.drawerTitle),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'serif',
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        strings.drawerSub,
+                        provider.businessName.isNotEmpty
+                            ? '${provider.businessName} · ${user?.email ?? ""}'
+                            : (user?.email ?? strings.drawerSub),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: Color(0xFF94A3B8),
                         ),
                       ),
@@ -185,6 +164,43 @@ class AppDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
+                // Upgrade to PRO / Premium Status Tile
+                ListTile(
+                  leading: const Icon(Icons.workspace_premium, color: AppColors.goldAccent),
+                  title: Text(
+                    provider.isProUser
+                        ? (isHindi ? '👑 खाता PRO (एक्टिव)' : '👑 Khata PRO (Active)')
+                        : (isHindi ? '👑 PRO में अपग्रेड करें' : '👑 Upgrade to PRO'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: provider.isProUser ? AppColors.navyLedger : const Color(0xFFC25B12),
+                    ),
+                  ),
+                  subtitle: Text(
+                    provider.isProUser
+                        ? (isHindi ? 'विज्ञापन-मुक्त & क्लाउड बैकअप' : 'Ad-Free & Cloud Backup')
+                        : (isHindi ? 'विज्ञापन हटाएं & WhatsApp PDF पाएँ' : 'Remove Ads & PDF Slips'),
+                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
+                  tileColor: AppColors.bgCard,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(
+                        color: provider.isProUser ? AppColors.goldAccent : AppColors.borderCard),
+                  ),
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (ctx) => const SubscriptionModal(),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+
                 // Feedback & Suggestion Tile
                 ListTile(
                   leading: const Icon(Icons.rate_review_outlined, color: AppColors.navyLedger),
@@ -206,40 +222,11 @@ class AppDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // Load Demo Data Tile (Optional test helper)
+                // Sign Out Tile
                 ListTile(
-                  leading: const Icon(Icons.dataset_outlined, color: AppColors.navyLedger),
+                  leading: const Icon(Icons.logout, color: AppColors.stampABorder),
                   title: Text(
-                    isHindi ? 'डेमो (Demo) डाटा लोड करें' : 'Load Demo Data',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  tileColor: AppColors.bgCard,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: const BorderSide(color: AppColors.borderCard),
-                  ),
-                  onTap: () {
-                    provider.loadSampleDemoData();
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(isHindi ? 'डेमो डाटा लोड हो गया' : 'Demo data loaded'),
-                        backgroundColor: AppColors.navyLedger,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-
-                // Clear Register Data Tile
-                ListTile(
-                  leading: const Icon(Icons.delete_outline, color: AppColors.stampABorder),
-                  title: Text(
-                    strings.clearSampleData,
+                    isHindi ? 'साइन आउट (लॉगआउट)' : 'Sign Out',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -251,7 +238,7 @@ class AppDrawer extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                     side: const BorderSide(color: AppColors.borderCard),
                   ),
-                  onTap: () => _confirmClearSampleData(context, provider),
+                  onTap: () => _handleSignOut(context),
                 ),
               ],
             ),
