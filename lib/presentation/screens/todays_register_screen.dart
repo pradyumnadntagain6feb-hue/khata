@@ -127,6 +127,38 @@ class _TodaysRegisterScreenState extends State<TodaysRegisterScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
+                    // Offline Indicator Banner (if offline)
+                    if (provider.isOffline) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF3CD),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFFFECB5)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.wifi_off,
+                                size: 16, color: Color(0xFF856404)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                strings.isHindi
+                                    ? 'ऑफ़लाइन मोड · डेटा सेव हो रहा है, इंटरनेट आने पर सिंक होगा'
+                                    : 'Offline Mode · Data saving locally, will auto-sync on connection',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF856404),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     // Search Bar if expanded
                     if (_isSearchVisible) ...[
                       Container(

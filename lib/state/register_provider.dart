@@ -19,10 +19,17 @@ class RegisterProvider extends ChangeNotifier {
   String _ownerName = '';
   String _businessName = 'Muster Khata';
   bool _isProUser = false;
+  bool _isOffline = false;
 
   String get ownerName => _ownerName;
   String get businessName => _businessName;
   bool get isProUser => _isProUser;
+  bool get isOffline => _isOffline;
+
+  void toggleOfflineMode(bool val) {
+    _isOffline = val;
+    notifyListeners();
+  }
 
   void setOwnerProfile({required String name, required String businessName}) {
     _ownerName = name;

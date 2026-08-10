@@ -222,6 +222,34 @@ class AppDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
 
+                // Offline Mode Test Switch Tile
+                SwitchListTile(
+                  secondary: const Icon(Icons.wifi_off_outlined, color: AppColors.navyLedger),
+                  title: Text(
+                    isHindi ? 'ऑफ़लाइन मोड (Offline Mode)' : 'Offline Mode Sync',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  subtitle: Text(
+                    isHindi ? 'बिना इंटरनेट के काम करें' : 'Work without internet',
+                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                  ),
+                  value: provider.isOffline,
+                  activeColor: AppColors.navyLedger,
+                  tileColor: AppColors.bgCard,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: const BorderSide(color: AppColors.borderCard),
+                  ),
+                  onChanged: (val) {
+                    provider.toggleOfflineMode(val);
+                  },
+                ),
+                const SizedBox(height: 12),
+
                 // Sign Out Tile
                 ListTile(
                   leading: const Icon(Icons.logout, color: AppColors.stampABorder),
