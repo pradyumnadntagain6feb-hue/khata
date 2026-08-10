@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/firestore_service.dart';
 import '../../state/register_provider.dart';
 import 'profile_setup_screen.dart';
+import 'todays_register_screen.dart';
 
 class GoogleAuthScreen extends StatefulWidget {
   const GoogleAuthScreen({super.key});
@@ -38,12 +40,37 @@ class _GoogleAuthScreenState extends State<GoogleAuthScreen> {
 
     if (!mounted) return;
 
-    if (credential != null) {
-      // 1-Tap Google Login Successful! Navigate to Profile Setup
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (ctx) => const ProfileSetupScreen()),
-        (route) => false,
-      );
+    if (credential != null && credential.user != null) {
+      final userId = credential.user!.uid;
+      final firestoreService = FirestoreService();
+
+      // Check if user's profile already exists in Cloud Firestore (e.g. returning user or reinstalled app)
+      final profileData = await firestoreService.getOwnerProfile(userId);
+
+      if (!mounted) return;
+
+      final provider = RegisterProviderScope.of(context);
+
+      if (profileData != null &&
+          profileData['ownerName'] != null &&
+          (profileData['ownerName'] as String).trim().isNotEmpty) {
+        // User profile ALREADY exists in Cloud Firestore! Restore profile & go straight to Home Screen!
+        provider.setOwnerProfile(
+          name: profileData['ownerName'],
+          businessName: profileData['businessName'] ?? 'Muster Khata',
+        );
+
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (ctx) => const TodaysRegisterScreen()),
+          (route) => false,
+        );
+      } else {
+        // Brand new user (1st time setup) -> Show Profile Setup Screen
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (ctx) => const ProfileSetupScreen()),
+          (route) => false,
+        );
+      }
     } else {
       setState(() {
         _isLoading = false;

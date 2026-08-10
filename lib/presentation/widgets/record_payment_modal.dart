@@ -6,12 +6,18 @@ class RecordPaymentModal extends StatefulWidget {
   final String employeeId;
   final String employeeName;
   final bool isAdvance;
+  final bool isEditMode;
+  final double currentPaid;
+  final double currentAdvance;
 
   const RecordPaymentModal({
     super.key,
     required this.employeeId,
     required this.employeeName,
     this.isAdvance = false,
+    this.isEditMode = false,
+    this.currentPaid = 0.0,
+    this.currentAdvance = 0.0,
   });
 
   @override
@@ -19,26 +25,53 @@ class RecordPaymentModal extends StatefulWidget {
 }
 
 class _RecordPaymentModalState extends State<RecordPaymentModal> {
-  final _amountController = TextEditingController();
+  late final TextEditingController _amountController;
+  late final TextEditingController _paidController;
+  late final TextEditingController _advanceController;
+  late bool _isEdit;
+
+  @override
+  void initState() {
+    super.initState();
+    _isEdit = widget.isEditMode;
+    _amountController = TextEditingController();
+    _paidController = TextEditingController(text: widget.currentPaid.round().toString());
+    _advanceController = TextEditingController(text: widget.currentAdvance.round().toString());
+  }
 
   @override
   void dispose() {
     _amountController.dispose();
+    _paidController.dispose();
+    _advanceController.dispose();
     super.dispose();
   }
 
   void _submit() {
-    final amount = double.tryParse(_amountController.text.trim());
-    if (amount != null && amount > 0) {
-      final provider = RegisterProviderScope.of(context);
-      provider.addPayment(
+    final provider = RegisterProviderScope.of(context);
+
+    if (_isEdit) {
+      final newPaid = double.tryParse(_paidController.text.trim()) ?? widget.currentPaid;
+      final newAdvance = double.tryParse(_advanceController.text.trim()) ?? widget.currentAdvance;
+
+      provider.updatePaidAndAdvance(
         widget.employeeId,
-        amount,
-        isAdvance: widget.isAdvance,
+        paid: newPaid,
+        advance: newAdvance,
       );
-      if (mounted) {
-        Navigator.of(context).pop();
+    } else {
+      final amount = double.tryParse(_amountController.text.trim());
+      if (amount != null && amount > 0) {
+        provider.addPayment(
+          widget.employeeId,
+          amount,
+          isAdvance: widget.isAdvance,
+        );
       }
+    }
+
+    if (mounted) {
+      Navigator.of(context).pop();
     }
   }
 
@@ -46,9 +79,7 @@ class _RecordPaymentModalState extends State<RecordPaymentModal> {
   Widget build(BuildContext context) {
     final provider = RegisterProviderScope.of(context);
     final strings = provider.strings;
-
-    final titleText = widget.isAdvance ? strings.giveCashAdvance : strings.recordSalaryPayment;
-    final buttonText = widget.isAdvance ? strings.saveAdvance : strings.savePayment;
+    final isHindi = strings.isHindi;
 
     return Container(
       padding: EdgeInsets.only(
@@ -65,107 +96,196 @@ class _RecordPaymentModalState extends State<RecordPaymentModal> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                titleText,
-                style: const TextStyle(
-                  fontFamily: 'serif',
-                  fontSize: 18,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _isEdit
+                          ? (isHindi ? 'पेमेंट व एडवांस एडिट करें' : 'Edit Paid & Advance')
+                          : (widget.isAdvance ? strings.giveCashAdvance : strings.recordSalaryPayment),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'serif',
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    Text(
+                      widget.employeeName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Mode Toggle (Add vs Edit)
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _isEdit = !_isEdit;
+                  });
+                },
+                icon: Icon(
+                  _isEdit ? Icons.add_circle_outline : Icons.edit_note,
+                  size: 18,
+                  color: AppColors.navyLedger,
+                ),
+                label: Text(
+                  _isEdit
+                      ? (isHindi ? '+ नया जोड़ें' : '+ Add New')
+                      : (isHindi ? '✏️ एडिट करें' : '✏️ Edit Amounts'),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.navyLedger,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          if (_isEdit) ...[
+            // Direct Paid Amount Field
+            Text(
+              isHindi ? 'कुल दिया गया भुगतान (Paid):' : 'Total Paid Amount:',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textMuted,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _paidController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                prefixText: '₹ ',
+                prefixStyle: const TextStyle(
+                  fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textDark,
                 ),
+                filled: true,
+                fillColor: AppColors.bgCard,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: AppColors.borderCard),
+                ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close, color: AppColors.textMuted),
-                onPressed: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(height: 14),
+
+            // Direct Advance Amount Field
+            Text(
+              isHindi ? 'कुल एडवांस राशि (Advance):' : 'Total Advance Amount:',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textMuted,
               ),
-            ],
-          ),
-          Text(
-            '${strings.workerLabel}: ${widget.employeeName}',
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textMuted,
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            strings.amountInRs,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textMuted,
+            const SizedBox(height: 6),
+            TextField(
+              controller: _advanceController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                prefixText: '₹ ',
+                prefixStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textDark,
+                ),
+                filled: true,
+                fillColor: AppColors.bgCard,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: AppColors.borderCard),
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _amountController,
-            keyboardType: TextInputType.number,
-            autofocus: true,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textDark,
-            ),
-            decoration: InputDecoration(
-              prefixText: '₹ ',
-              prefixStyle: const TextStyle(
-                fontSize: 22,
+          ] else ...[
+            // Amount Input Field
+            TextField(
+              controller: _amountController,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              style: const TextStyle(
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textDark,
               ),
-              hintText: '1000',
-              filled: true,
-              fillColor: AppColors.bgCard,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppColors.borderCard),
+              decoration: InputDecoration(
+                prefixText: '₹ ',
+                prefixStyle: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textDark,
+                ),
+                hintText: '0',
+                hintStyle: const TextStyle(
+                  fontSize: 20,
+                  color: AppColors.textLight,
+                ),
+                filled: true,
+                fillColor: AppColors.bgCard,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: AppColors.borderCard),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    side: const BorderSide(color: AppColors.borderCard),
-                  ),
-                  child: Text(strings.cancel,
-                      style: const TextStyle(color: AppColors.textDark)),
+          ],
+
+          const SizedBox(height: 24),
+
+          // Submit Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.navyLedger,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.isAdvance
-                        ? AppColors.goldAccent
-                        : AppColors.navyLedger,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Text(
-                    buttonText,
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
+              child: Text(
+                _isEdit
+                    ? (isHindi ? 'अपडेट करें (Save Edits)' : 'Save Edits')
+                    : (widget.isAdvance ? strings.saveAdvance : strings.savePayment),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
-            ],
+            ),
           ),
         ],
       ),

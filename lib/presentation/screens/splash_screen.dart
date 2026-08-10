@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/firestore_service.dart';
 import '../../state/register_provider.dart';
 import 'google_auth_screen.dart';
 import 'language_selection_screen.dart';
@@ -41,19 +42,34 @@ class _KhataSplashScreenState extends State<KhataSplashScreen>
     _controller.forward();
 
     // Smart Navigation
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 1500), () async {
       if (!mounted) return;
       final provider = RegisterProviderScope.of(context);
       final authService = AuthService();
 
       Widget nextScreen;
-      if (authService.isLoggedIn) {
+      if (authService.isLoggedIn && authService.currentUser != null) {
+        final userId = authService.currentUser!.uid;
+        final firestoreService = FirestoreService();
+        final profileData = await firestoreService.getOwnerProfile(userId);
+
+        if (profileData != null &&
+            profileData['ownerName'] != null &&
+            (profileData['ownerName'] as String).trim().isNotEmpty) {
+          provider.setOwnerProfile(
+            name: profileData['ownerName'],
+            businessName: profileData['businessName'] ?? 'Muster Khata',
+          );
+        }
+
         nextScreen = const TodaysRegisterScreen();
       } else if (provider.isFirstTimeUser) {
         nextScreen = const LanguageSelectionScreen();
       } else {
         nextScreen = const GoogleAuthScreen();
       }
+
+      if (!mounted) return;
 
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(

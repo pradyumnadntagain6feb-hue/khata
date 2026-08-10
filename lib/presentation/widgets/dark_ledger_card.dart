@@ -48,134 +48,205 @@ class DarkLedgerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.navyLedger,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.navyLedgerBorder, width: 1),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A2634), Color(0xFF0F172A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0x33F3C474), width: 1.2),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x331A2634),
-            blurRadius: 16,
+            color: Color(0x351A2634),
+            blurRadius: 18,
             offset: Offset(0, 8),
           ),
         ],
       ),
+      padding: const EdgeInsets.all(20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Subtle Gold Accent Bar at Top
+          // Top Financial Metric Grid: Earned / Paid / Advance
           Container(
-            height: 3,
-            decoration: const BoxDecoration(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              gradient: LinearGradient(
-                colors: [Color(0xFFE59836), Color(0xFFF3C474), Color(0xFFE59836)],
-              ),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+            decoration: BoxDecoration(
+              color: const Color(0x0FFFFFFF),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0x1AFFFFFF)),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(18.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                // Top Row: Earned / Paid / Advance
-                Row(
-                  children: [
-                    Expanded(
-                      child: _LedgerItem(
-                        title: earnedLabel,
-                        amount: _formatCurrency(earned),
-                      ),
-                    ),
-                    Expanded(
-                      child: _LedgerItem(
-                        title: paidLabel,
-                        amount: _formatCurrency(paid),
-                      ),
-                    ),
-                    Expanded(
-                      child: _LedgerItem(
-                        title: advanceLabel,
-                        amount: _formatCurrency(advance),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                const Divider(color: Colors.white12, height: 1),
-                const SizedBox(height: 14),
-                // Bottom Row: Balance Due
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      balanceDueLabel,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFFCBD5E1),
-                      ),
-                    ),
-                    Text(
-                      _formatCurrency(due),
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.goldAccent,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                // Quick Action Buttons
-                if (onRecordPayment != null || onGiveAdvance != null) ...[
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      if (onRecordPayment != null)
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: onRecordPayment,
-                            icon: const Icon(Icons.add, size: 14, color: Colors.white),
-                            label: Text(
-                              recordPaymentLabel,
-                              style: const TextStyle(fontSize: 11, color: Colors.white),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: Colors.white.withAlpha(51)),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (onRecordPayment != null && onGiveAdvance != null)
-                        const SizedBox(width: 8),
-                      if (onGiveAdvance != null)
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: onGiveAdvance,
-                            icon: const Icon(Icons.payment, size: 14, color: AppColors.goldAccent),
-                            label: Text(
-                              giveAdvanceLabel,
-                              style: const TextStyle(fontSize: 11, color: AppColors.goldAccent),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: AppColors.goldAccent.withAlpha(102)),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                Expanded(
+                  child: _LedgerMetricItem(
+                    title: earnedLabel,
+                    amount: _formatCurrency(earned),
+                    color: Colors.white,
                   ),
-                ],
+                ),
+                Container(height: 28, width: 1, color: const Color(0x22FFFFFF)),
+                Expanded(
+                  child: _LedgerMetricItem(
+                    title: paidLabel,
+                    amount: _formatCurrency(paid),
+                    color: const Color(0xFF6EE7B7), // Soft Emerald Green
+                  ),
+                ),
+                Container(height: 28, width: 1, color: const Color(0x22FFFFFF)),
+                Expanded(
+                  child: _LedgerMetricItem(
+                    title: advanceLabel,
+                    amount: _formatCurrency(advance),
+                    color: const Color(0xFFFDE047), // Soft Amber Gold
+                  ),
+                ),
               ],
             ),
+          ),
+          const SizedBox(height: 18),
+
+          // Main Balance Due Card Section
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: AppColors.stampABorder,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        balanceDueLabel.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          color: Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatCurrency(due),
+                    style: TextStyle(
+                      fontFamily: 'serif',
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: due > 0 ? const Color(0xFFFCA5A5) : Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+              // Pro Gold Badge Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0x22F3C474),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.goldAccent.withAlpha(100)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.workspace_premium,
+                        size: 14, color: AppColors.goldAccent),
+                    SizedBox(width: 4),
+                    Text(
+                      'KHATA LEDGER',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                        color: AppColors.goldAccent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Bottom Interactive Action Buttons: Record Payment & Give Advance
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: onRecordPayment,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF22C55E), // Vibrant Green Button
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x3322C55E),
+                          blurRadius: 8,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.add_card, size: 16, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          recordPaymentLabel,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: InkWell(
+                  onTap: onGiveAdvance,
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0x22FFFFFF),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0x44FFFFFF)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.payments_outlined,
+                            size: 16, color: AppColors.goldAccent),
+                        const SizedBox(width: 6),
+                        Text(
+                          giveAdvanceLabel,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -183,40 +254,38 @@ class DarkLedgerCard extends StatelessWidget {
   }
 }
 
-class _LedgerItem extends StatelessWidget {
+class _LedgerMetricItem extends StatelessWidget {
   final String title;
   final String amount;
+  final Color color;
 
-  const _LedgerItem({
+  const _LedgerMetricItem({
     required this.title,
     required this.amount,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
             color: Color(0xFF94A3B8),
-            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 4),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            amount,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFF8FAFC),
-              letterSpacing: -0.3,
-            ),
+        Text(
+          amount,
+          style: TextStyle(
+            fontFamily: 'serif',
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
         ),
       ],

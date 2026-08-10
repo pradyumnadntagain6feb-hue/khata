@@ -7,8 +7,30 @@ import '../core/models/work_log_model.dart';
 import '../core/services/firestore_service.dart';
 
 class RegisterProvider extends ChangeNotifier {
-  final int todayDay = 18;
-  final String monthYearLabel = 'AUGUST 2026';
+  DateTime _selectedDate = DateTime.now();
+
+  DateTime get selectedDate => _selectedDate;
+  int get todayDay => _selectedDate.day;
+  int get currentYear => _selectedDate.year;
+  int get currentMonth => _selectedDate.month;
+
+  String get monthYearLabel {
+    final months = [
+      'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+      'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'
+    ];
+    return '${months[_selectedDate.month - 1]} ${_selectedDate.year}';
+  }
+
+  void setSelectedDate(DateTime date) {
+    _selectedDate = date;
+    notifyListeners();
+  }
+
+  void changeMonth(int offset) {
+    _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + offset, _selectedDate.day);
+    notifyListeners();
+  }
 
   final FirestoreService _firestoreService = FirestoreService();
   StreamSubscription<List<Employee>>? _firestoreSubscription;
@@ -220,15 +242,27 @@ class RegisterProvider extends ChangeNotifier {
     final index = _employees.indexWhere((e) => e.id == employeeId);
     if (index != -1) {
       final emp = _employees[index];
-      if (isAdvance) {
-        emp.advance += amount;
-      } else {
-        emp.paid += amount;
-      }
+      final newPaid = isAdvance ? emp.paid : (emp.paid + amount);
+      final newAdvance = isAdvance ? (emp.advance + amount) : emp.advance;
+
+      _employees[index] = emp.copyWith(paid: newPaid, advance: newAdvance);
       notifyListeners();
 
       // Cloud Sync
-      _firestoreService.updatePayments(employeeId, emp.paid, emp.advance);
+      _firestoreService.updatePayments(employeeId, newPaid, newAdvance);
+    }
+  }
+
+  /// Directly edit paid and advance amounts
+  void updatePaidAndAdvance(String employeeId, {required double paid, required double advance}) {
+    final index = _employees.indexWhere((e) => e.id == employeeId);
+    if (index != -1) {
+      final emp = _employees[index];
+      _employees[index] = emp.copyWith(paid: paid, advance: advance);
+      notifyListeners();
+
+      // Cloud Sync to Firestore
+      _firestoreService.updatePayments(employeeId, paid, advance);
     }
   }
 
@@ -265,6 +299,41 @@ class RegisterProvider extends ChangeNotifier {
 
     // Cloud Sync to Firestore Database
     _firestoreService.addEmployee(newEmployee);
+  }
+
+  /// Update existing employee details
+  void updateEmployeeDetails({
+    required String id,
+    required String name,
+    required String role,
+    required double dailyRate,
+  }) {
+    final index = _employees.indexWhere((e) => e.id == id);
+    if (index != -1) {
+      final emp = _employees[index];
+      final updatedEmp = emp.copyWith(
+        name: name.trim(),
+        role: role.trim(),
+        dailyRate: dailyRate,
+      );
+      _employees[index] = updatedEmp;
+      notifyListeners();
+
+      // Cloud Sync to Firestore Database
+      _firestoreService.addEmployee(updatedEmp);
+    }
+  }
+
+  /// Delete employee permanently
+  void deleteEmployee(String id) {
+    _employees.removeWhere((e) => e.id == id);
+    if (_selectedEmployeeId == id) {
+      _selectedEmployeeId = null;
+    }
+    notifyListeners();
+
+    // Cloud Sync to Firestore Database
+    _firestoreService.deleteEmployee(id);
   }
 
   // Quick stats calculations for overall register ribbon

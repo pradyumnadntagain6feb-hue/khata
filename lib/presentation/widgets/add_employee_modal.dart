@@ -3,7 +3,20 @@ import '../../core/constants/app_colors.dart';
 import '../../state/register_provider.dart';
 
 class AddEmployeeModal extends StatefulWidget {
-  const AddEmployeeModal({super.key});
+  final String? employeeId;
+  final String? initialName;
+  final String? initialRole;
+  final double? initialRate;
+  final bool isEditMode;
+
+  const AddEmployeeModal({
+    super.key,
+    this.employeeId,
+    this.initialName,
+    this.initialRole,
+    this.initialRate,
+    this.isEditMode = false,
+  });
 
   @override
   State<AddEmployeeModal> createState() => _AddEmployeeModalState();
@@ -11,10 +24,20 @@ class AddEmployeeModal extends StatefulWidget {
 
 class _AddEmployeeModalState extends State<AddEmployeeModal> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _roleController = TextEditingController();
-  final _rateController = TextEditingController();
-  final _advanceController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _roleController;
+  late final TextEditingController _rateController;
+  late final TextEditingController _advanceController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.initialName ?? '');
+    _roleController = TextEditingController(text: widget.initialRole ?? '');
+    _rateController = TextEditingController(
+        text: widget.initialRate != null ? widget.initialRate!.round().toString() : '');
+    _advanceController = TextEditingController();
+  }
 
   @override
   void dispose() {
@@ -33,12 +56,22 @@ class _AddEmployeeModalState extends State<AddEmployeeModal> {
       final advance = double.tryParse(_advanceController.text.trim()) ?? 0.0;
 
       final provider = RegisterProviderScope.of(context);
-      provider.addNewEmployee(
-        name: name,
-        role: role,
-        dailyRate: rate,
-        initialAdvance: advance,
-      );
+
+      if (widget.isEditMode && widget.employeeId != null) {
+        provider.updateEmployeeDetails(
+          id: widget.employeeId!,
+          name: name,
+          role: role,
+          dailyRate: rate,
+        );
+      } else {
+        provider.addNewEmployee(
+          name: name,
+          role: role,
+          dailyRate: rate,
+          initialAdvance: advance,
+        );
+      }
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -50,6 +83,7 @@ class _AddEmployeeModalState extends State<AddEmployeeModal> {
   Widget build(BuildContext context) {
     final provider = RegisterProviderScope.of(context);
     final strings = provider.strings;
+    final isHindi = strings.isHindi;
 
     return Container(
       padding: EdgeInsets.only(
@@ -73,10 +107,12 @@ class _AddEmployeeModalState extends State<AddEmployeeModal> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    strings.addNewWorker,
+                    widget.isEditMode
+                        ? (isHindi ? 'मज़दूर की जानकारी एडिट करें' : 'Edit Worker Details')
+                        : strings.addNewWorker,
                     style: const TextStyle(
                       fontFamily: 'serif',
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textDark,
                     ),
@@ -88,135 +124,127 @@ class _AddEmployeeModalState extends State<AddEmployeeModal> {
                 ],
               ),
               const SizedBox(height: 16),
-              _buildField(
-                label: strings.workerName,
+
+              // Name Field
+              TextFormField(
                 controller: _nameController,
-                hint: strings.workerNameHint,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: strings.workerName,
+                  hintText: strings.workerNameHint,
+                  prefixIcon: const Icon(Icons.person_outline,
+                      size: 20, color: AppColors.textMuted),
+                  filled: true,
+                  fillColor: AppColors.bgCard,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppColors.borderCard),
+                  ),
+                ),
                 validator: (val) =>
-                    val == null || val.isEmpty ? strings.workerNameError : null,
+                    val == null || val.trim().isEmpty ? strings.workerNameError : null,
               ),
-              const SizedBox(height: 12),
-              _buildField(
-                label: strings.roleOccupation,
+              const SizedBox(height: 14),
+
+              // Role / Occupation Field
+              TextFormField(
                 controller: _roleController,
-                hint: strings.roleOccupationHint,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: strings.roleOccupation,
+                  hintText: strings.roleOccupationHint,
+                  prefixIcon: const Icon(Icons.work_outline,
+                      size: 20, color: AppColors.textMuted),
+                  filled: true,
+                  fillColor: AppColors.bgCard,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppColors.borderCard),
+                  ),
+                ),
                 validator: (val) =>
-                    val == null || val.isEmpty ? strings.roleOccupationError : null,
+                    val == null || val.trim().isEmpty ? strings.roleOccupationError : null,
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildField(
-                      label: strings.dailyRate,
-                      controller: _rateController,
-                      hint: strings.dailyRateHint,
-                      keyboardType: TextInputType.number,
-                      validator: (val) =>
-                          val == null || val.isEmpty ? strings.dailyRateError : null,
-                    ),
+              const SizedBox(height: 14),
+
+              // Daily Rate Field
+              TextFormField(
+                controller: _rateController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: strings.dailyRate,
+                  prefixText: '₹ ',
+                  prefixStyle: const TextStyle(
+                      fontWeight: FontWeight.bold, color: AppColors.textDark),
+                  filled: true,
+                  fillColor: AppColors.bgCard,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppColors.borderCard),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildField(
-                      label: strings.initialAdvance,
-                      controller: _advanceController,
-                      hint: strings.initialAdvanceHint,
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                ],
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) {
+                    return strings.dailyRateError;
+                  }
+                  if (double.tryParse(val.trim()) == null) {
+                    return isHindi ? 'कृपया सही संख्या दर्ज करें' : 'Enter valid number';
+                  }
+                  return null;
+                },
               ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        side: const BorderSide(color: AppColors.borderCard),
-                      ),
-                      child: Text(strings.cancel,
-                          style: const TextStyle(color: AppColors.textDark)),
+              const SizedBox(height: 14),
+
+              // Initial Advance Field (Only in Add mode)
+              if (!widget.isEditMode) ...[
+                TextFormField(
+                  controller: _advanceController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: strings.initialAdvance,
+                    hintText: strings.initialAdvanceHint,
+                    prefixText: '₹ ',
+                    prefixStyle: const TextStyle(
+                        fontWeight: FontWeight.bold, color: AppColors.textDark),
+                    filled: true,
+                    fillColor: AppColors.bgCard,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppColors.borderCard),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 1,
-                    child: ElevatedButton(
-                      onPressed: _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.navyLedger,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: Text(
-                        strings.saveEmployee,
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // Save / Submit Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navyLedger,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                ],
+                  child: Text(
+                    widget.isEditMode
+                        ? (isHindi ? 'बदलाव सेव करें' : 'Save Edits')
+                        : strings.saveEmployee,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildField({
-    required String label,
-    required TextEditingController controller,
-    required String hint,
-    TextInputType keyboardType = TextInputType.text,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textMuted,
-          ),
-        ),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          validator: validator,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.textLight, fontSize: 13),
-            filled: true,
-            fillColor: AppColors.bgCard,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.borderCard),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.borderCard),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.navyLedger),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

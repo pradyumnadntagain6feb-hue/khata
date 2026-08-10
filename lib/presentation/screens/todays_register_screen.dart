@@ -59,18 +59,63 @@ class _TodaysRegisterScreenState extends State<TodaysRegisterScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text(
-                            provider.ownerName.isNotEmpty
-                                ? '${provider.ownerName.toUpperCase()} · ${strings.musterAugust}'
-                                : strings.musterAugust,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
-                              color: Color(0xFF7B8898),
-                            ),
+                          child: Row(
+                            children: [
+                              InkWell(
+                                onTap: () => provider.changeMonth(-1),
+                                borderRadius: BorderRadius.circular(8),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(2.0),
+                                  child: Icon(Icons.chevron_left, size: 18, color: AppColors.navyLedger),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () async {
+                                  final pickedDate = await showDatePicker(
+                                    context: context,
+                                    initialDate: provider.selectedDate,
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2100),
+                                  );
+                                  if (pickedDate != null) {
+                                    provider.setSelectedDate(pickedDate);
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.bgCard,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: AppColors.borderCard),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        provider.ownerName.isNotEmpty
+                                            ? '${provider.ownerName.toUpperCase()} · ${provider.monthYearLabel}'
+                                            : provider.monthYearLabel,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.0,
+                                          color: AppColors.navyLedger,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.calendar_month, size: 12, color: AppColors.navyLedger),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () => provider.changeMonth(1),
+                                borderRadius: BorderRadius.circular(8),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(2.0),
+                                  child: Icon(Icons.chevron_right, size: 18, color: AppColors.navyLedger),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -340,10 +385,21 @@ class _TodaysRegisterScreenState extends State<TodaysRegisterScreen> {
                         onTap: () {
                           provider.selectEmployee(emp.id);
                           Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (ctx) => EmployeeDetailScreen(
-                                employeeId: emp.id,
-                              ),
+                            PageRouteBuilder(
+                              pageBuilder: (ctx, anim1, anim2) =>
+                                  EmployeeDetailScreen(employeeId: emp.id),
+                              transitionsBuilder: (ctx, anim1, anim2, child) {
+                                return SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0.06, 0.0),
+                                    end: Offset.zero,
+                                  ).animate(CurvedAnimation(
+                                      parent: anim1, curve: Curves.easeOutCubic)),
+                                  child: FadeTransition(opacity: anim1, child: child),
+                                );
+                              },
+                              transitionDuration:
+                                  const Duration(milliseconds: 280),
                             ),
                           );
                         },
@@ -475,22 +531,25 @@ class _EmployeeCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                // Initials Avatar Circle
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: const BoxDecoration(
-                    color: AppColors.navyLedger,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    employee.initials,
-                    style: const TextStyle(
-                      fontFamily: 'serif',
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                // Initials Avatar Circle with Hero Tag
+                Hero(
+                  tag: 'emp_avatar_${employee.id}',
+                  child: Container(
+                    width: 46,
+                    height: 46,
+                    decoration: const BoxDecoration(
+                      color: AppColors.navyLedger,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      employee.initials,
+                      style: const TextStyle(
+                        fontFamily: 'serif',
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -500,13 +559,19 @@ class _EmployeeCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        employee.name,
-                        style: const TextStyle(
-                          fontFamily: 'serif',
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textDark,
+                      Hero(
+                        tag: 'emp_name_${employee.id}',
+                        child: Material(
+                          color: Colors.transparent,
+                          child: Text(
+                            employee.name,
+                            style: const TextStyle(
+                              fontFamily: 'serif',
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textDark,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 2),
